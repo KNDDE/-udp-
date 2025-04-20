@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络直播管理后台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .chat-container {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: white;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+        }
+        .chat-message .username {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .chat-message .timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-left: 10px;
+        }
+        .video-preview {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border-radius: 5px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>欢迎南哥</h1>
+        <p>网络直播聊天室管理后台</p>
+    </div>
+
+    <div class="main-container">
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="broadcast-tab" data-bs-toggle="tab" data-bs-target="#broadcast" type="button" role="tab" aria-controls="broadcast" aria-selected="true">直播管理</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab" aria-controls="chat" aria-selected="false">聊天管理</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">系统设置</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- 直播管理标签页 -->
+            <div class="tab-pane fade show active" id="broadcast" role="tabpanel" aria-labelledby="broadcast-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">视频预览</div>
+                            <div class="card-body">
+                                <div class="video-preview" id="videoPreview">
+                                    <div id="previewPlaceholder">视频预览区域</div>
+                                    <video id="videoElement" style="width: 100%; height: 100%; display: none;"></video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">直播控制</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">直播类型</label>
+                                    <select class="form-select" id="broadcastType">
+                                        <option value="video">本地视频</option>
+                                        <option value="screen">屏幕共享</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3" id="videoPathContainer">
+                                    <label class="form-label">选择视频文件</label>
+                                    <input type="file" class="form-control" id="videoFileInput" accept="video/*">
+                                    <input type="hidden" id="videoPath">
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" id="startBroadcast">开始直播</button>
+                                    <button class="btn btn-danger" id="stopBroadcast" disabled>停止直播</button>
+                                </div>
+
+                                <div class="mt-3">
+                                    <p>直播状态: <span id="broadcastStatus"><span class="status-indicator status-offline"></span>未直播</span></p>
+                                    <p>在线用户: <span id="onlineUsers">0</span> 人</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 聊天管理标签页 -->
+            <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">聊天消息</div>
+                            <div class="card-body">
+                                <div class="chat-container" id="chatMessages"></div>
+                                <div class="mt-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="messageInput" placeholder="输入消息...">
+                                        <button class="btn btn-primary" id="sendMessage">发送</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">用户列表</div>
+                            <div class="card-body">
+                                <p>当前在线: <span id="userCount">0</span> 人</p>
+                                <div id="userList" class="list-group">
+                                    <!-- 用户列表将通过JavaScript动态添加 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置标签页 -->
+            <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                <div class="card">
+                    <div class="card-header">系统设置</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">UDP服务器端口</label>
+                            <input type="number" class="form-control" id="udpServerPort" value="12345" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">UDP客户端端口</label>
+                            <input type="number" class="form-control" id="udpClientPort" value="12346" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">服务器IP地址</label>
+                            <input type="text" class="form-control" id="serverIp" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">视频质量</label>
+                            <select class="form-select" id="videoQuality">
+                                <option value="high">高 (720p)</option>
+                                <option value="medium" selected>中 (480p)</option>
+                                <option value="low">低 (360p)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="saveSettings">保存设置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io/client-dist/socket.io.min.js"></script>
+    <script>
+        // 全局变量
+        let socket;
+        let broadcasting = false;
+        let username = "管理员";
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化Socket.IO连接
+            socket = io();
+
+            // 获取DOM元素
+            const broadcastTypeSelect = document.getElementById('broadcastType');
+            const videoPathContainer = document.getElementById('videoPathContainer');
+            const videoPathInput = document.getElementById('videoPath');
+            const startBroadcastBtn = document.getElementById('startBroadcast');
+            const stopBroadcastBtn = document.getElementById('stopBroadcast');
+            const broadcastStatusSpan = document.getElementById('broadcastStatus');
+            const onlineUsersSpan = document.getElementById('onlineUsers');
+            const userCountSpan = document.getElementById('userCount');
+            const chatMessagesDiv = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendMessageBtn = document.getElementById('sendMessage');
+            const serverIpInput = document.getElementById('serverIp');
+            const saveSettingsBtn = document.getElementById('saveSettings');
+
+            // 获取服务器IP地址
+            fetch('/api/broadcast_status')
+                .then(response => response.json())
+                .then(data => {
+                    // 检查当前是否正在广播
+                    if (data.broadcasting) {
+                        broadcasting = true;
+                        updateBroadcastStatus(true);
+                        if (data.type === 'video' && data.video_path) {
+                            videoPathInput.value = data.video_path;
+                        }
+                        broadcastTypeSelect.value = data.type;
+                        handleBroadcastTypeChange();
+                    }
+                })
+                .catch(error => console.error('获取广播状态失败:', error));
+
+            // 设置服务器IP地址
+            serverIpInput.value = window.location.hostname;
+
+            // 监听广播类型变化
+            broadcastTypeSelect.addEventListener('change', handleBroadcastTypeChange);
+
+            function handleBroadcastTypeChange() {
+                const broadcastType = broadcastTypeSelect.value;
+                if (broadcastType === 'video') {
+                    videoPathContainer.style.display = 'block';
+                } else {
+                    videoPathContainer.style.display = 'none';
+                }
+            }
+
+            // 初始调用一次
+            handleBroadcastTypeChange();
+
+            // 文件选择器变更事件
+            document.getElementById('videoFileInput').addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    // 将选择的文件路径保存到隐藏输入框中
+                    document.getElementById('videoPath').value = file.name;
+                }
+            });
+
+            // 开始广播按钮点击事件
+            startBroadcastBtn.addEventListener('click', function() {
+                const broadcastType = broadcastTypeSelect.value;
+                let requestData = { type: broadcastType };
+
+                if (broadcastType === 'video') {
+                    const fileInput = document.getElementById('videoFileInput');
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        alert('请选择视频文件');
+                        return;
+                    }
+                    const file = fileInput.files[0];
+                    requestData.video_path = file.name;
+                    
+                    // 创建FormData对象上传文件
+                    const formData = new FormData();
+                    formData.append('video_file', file);
+                    
+                    // 先上传文件
+                    fetch('/api/upload_video', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // 文件上传成功后开始直播
+                            startBroadcast(requestData);
+                        } else {
+                            alert('上传视频失败: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('上传视频请求失败:', error);
+                        alert('上传视频请求失败');
+                    });
+                } else {
+                    // 直接开始直播
+                    startBroadcast(requestData);
+                }
+            });
+            
+            // 开始直播的函数
+            function startBroadcast(requestData) {
+                fetch('/api/start_broadcast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        broadcasting = true;
+                        updateBroadcastStatus(true);
+                        
+                        // 显示视频预览
+                        const videoElement = document.getElementById('videoElement');
+                        videoElement.style.display = 'block';
+                        document.getElementById('previewPlaceholder').style.display = 'none';
+                        
+                        // 如果是视频文件，设置视频源
+                        if (requestData.type === 'video') {
+                            videoElement.src = '/uploads/' + requestData.video_path;
+                            videoElement.play().catch(e => console.error('视频播放失败:', e));
+                        }
+                    } else {
+                        alert('开始直播失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('开始直播请求失败:', error);
+                    alert('开始直播请求失败');
+                });
+            }
+
+            // 停止广播按钮点击事件
+            stopBroadcastBtn.addEventListener('click', function() {
+                fetch('/api/stop_broadcast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        broadcasting = false;
+                        updateBroadcastStatus(false);
+                        
+                        // 隐藏视频元素，显示占位符
+                        const videoElement = document.getElementById('videoElement');
+                        videoElement.pause();
+                        videoElement.src = '';
+                        videoElement.style.display = 'none';
+                        document.getElementById('previewPlaceholder').style.display = 'block';
+                    } else {
+                        alert('停止直播失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('停止直播请求失败:', error);
+                    alert('停止直播请求失败');
+                });
+            });
+
+            // 更新广播状态UI
+            function updateBroadcastStatus(isBroadcasting) {
+                if (isBroadcasting) {
+                    broadcastStatusSpan.innerHTML = '<span class="status-indicator status-online"></span>直播中';
+                    startBroadcastBtn.disabled = true;
+                    stopBroadcastBtn.disabled = false;
+                } else {
+                    broadcastStatusSpan.innerHTML = '<span class="status-indicator status-offline"></span>未直播';
+                    startBroadcastBtn.disabled = false;
+                    stopBroadcastBtn.disabled = true;
+                }
+            }
+
+            // 发送消息按钮点击事件
+            sendMessageBtn.addEventListener('click', sendMessage);
+
+            // 按Enter键发送消息
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    socket.emit('chat_message', {
+                        username: username,
+                        message: message
+                    });
+                    messageInput.value = '';
+                }
+            }
+
+            // 保存设置按钮点击事件
+            saveSettingsBtn.addEventListener('click', function() {
+                alert('设置已保存');
+            });
+
+            // Socket.IO事件监听
+            socket.on('connect', function() {
+                console.log('已连接到服务器');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('与服务器断开连接');
+            });
+
+            socket.on('chat_message', function(data) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'chat-message';
+                messageDiv.innerHTML = `
+                    <span class="username">${data.username}</span>
+                    <span class="timestamp">${data.timestamp}</span>
+                    <div class="message-content">${data.message}</div>
+                `;
+                chatMessagesDiv.appendChild(messageDiv);
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+            });
+
+            socket.on('user_count', function(data) {
+                onlineUsersSpan.textContent = data.count;
+                userCountSpan.textContent = data.count;
+            });
+        });
+    </script>
+</body>
+</html>

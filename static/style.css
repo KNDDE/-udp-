@@ -1,0 +1,210 @@
+/* 全局样式 */
+body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+
+/* 页眉样式 */
+.header {
+    background-color: #343a40;
+    color: white;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+.header p {
+    margin: 10px 0 0;
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+/* 主容器样式 */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* 卡片样式 */
+.card {
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    padding: 12px 15px;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.card-body {
+    padding: 15px;
+    background-color: white;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* 聊天容器样式 */
+.chat-container {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: white;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    background-color: #f1f1f1;
+    word-wrap: break-word;
+}
+
+.chat-message .username {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.chat-message .timestamp {
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-left: 10px;
+}
+
+.chat-message .message-content {
+    margin-top: 5px;
+}
+
+/* 视频容器样式 */
+.video-container, .video-preview {
+    width: 100%;
+    height: 400px;
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.video-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    z-index: 10;
+}
+
+/* 状态指示器样式 */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-online {
+    background-color: #28a745;
+}
+
+.status-offline {
+    background-color: #dc3545;
+}
+
+/* 导航标签样式 */
+.nav-tabs .nav-link {
+    color: #495057;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: -1px;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: bold;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
+    .video-container, .video-preview {
+        height: 300px;
+    }
+    
+    .chat-container {
+        height: 250px;
+    }
+}
+
+@media (max-width: 576px) {
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .header p {
+        font-size: 0.9rem;
+    }
+    
+    .video-container, .video-preview {
+        height: 250px;
+    }
+    
+    .chat-container {
+        height: 200px;
+    }
+}

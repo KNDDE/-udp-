@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络直播聊天室</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: white;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+        }
+        .chat-message .username {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .chat-message .timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-left: 10px;
+        }
+        .video-container {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border-radius: 5px;
+            position: relative;
+        }
+        .video-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .user-info {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>欢迎来到南的网络直播聊天室</h1>
+        <p>在这里观看直播并与其他用户交流</p>
+    </div>
+
+    <div class="main-container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">直播画面</div>
+                    <div class="card-body p-0">
+                        <div class="video-container" id="videoContainer">
+                            <div id="videoPlaceholder">等待直播开始...</div>
+                            <video id="videoElement" style="width: 100%; height: 100%; display: none;"></video>
+                            <div class="video-status">
+                                <span id="broadcastStatus"><span class="status-indicator status-offline"></span>未直播</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">聊天室</div>
+                    <div class="card-body">
+                        <div class="user-info">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">昵称</span>
+                                <input type="text" class="form-control" id="usernameInput" placeholder="请输入您的昵称">
+                                <button class="btn btn-outline-secondary" type="button" id="setUsername">确定</button>
+                            </div>
+                            <p>在线人数: <span id="onlineUsers">0</span></p>
+                        </div>
+
+                        <div class="chat-container" id="chatMessages"></div>
+
+                        <div class="mt-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="messageInput" placeholder="输入消息..." disabled>
+                                <button class="btn btn-primary" id="sendMessage" disabled>发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io/client-dist/socket.io.min.js"></script>
+    <script>
+        // 全局变量
+        let socket;
+        let username = "";
+        let udpSocket = null;
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化Socket.IO连接
+            socket = io();
+
+            // 获取DOM元素
+            const usernameInput = document.getElementById('usernameInput');
+            const setUsernameBtn = document.getElementById('setUsername');
+            const messageInput = document.getElementById('messageInput');
+            const sendMessageBtn = document.getElementById('sendMessage');
+            const chatMessagesDiv = document.getElementById('chatMessages');
+            const onlineUsersSpan = document.getElementById('onlineUsers');
+            const broadcastStatusSpan = document.getElementById('broadcastStatus');
+            const videoElement = document.getElementById('videoElement');
+            const videoPlaceholder = document.getElementById('videoPlaceholder');
+
+            // 检查广播状态
+            fetch('/api/broadcast_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.broadcasting) {
+                        updateBroadcastStatus(true);
+                        // 这里应该开始接收视频流
+                        startReceivingStream();
+                    }
+                })
+                .catch(error => console.error('获取广播状态失败:', error));
+
+            // 设置用户名按钮点击事件
+            setUsernameBtn.addEventListener('click', function() {
+                const newUsername = usernameInput.value.trim();
+                if (newUsername) {
+                    username = newUsername;
+                    messageInput.disabled = false;
+                    sendMessageBtn.disabled = false;
+                    usernameInput.disabled = true;
+                    setUsernameBtn.disabled = true;
+                    
+                    // 显示欢迎消息
+                    const welcomeDiv = document.createElement('div');
+                    welcomeDiv.className = 'chat-message';
+                    welcomeDiv.innerHTML = `
+                        <span class="username">系统</span>
+                        <span class="timestamp">${getCurrentTime()}</span>
+                        <div class="message-content">欢迎 ${username} 加入聊天室！</div>
+                    `;
+                    chatMessagesDiv.appendChild(welcomeDiv);
+                    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+                }
+            });
+
+            // 按Enter键设置用户名
+            usernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !usernameInput.disabled) {
+                    setUsernameBtn.click();
+                }
+            });
+
+            // 发送消息按钮点击事件
+            sendMessageBtn.addEventListener('click', sendMessage);
+
+            // 按Enter键发送消息
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !messageInput.disabled) {
+                    sendMessage();
+                }
+            });
+
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (message && username) {
+                    socket.emit('chat_message', {
+                        username: username,
+                        message: message
+                    });
+                    messageInput.value = '';
+                }
+            }
+
+            // 获取当前时间
+            function getCurrentTime() {
+                const now = new Date();
+                return now.getHours().toString().padStart(2, '0') + ':' +
+                       now.getMinutes().toString().padStart(2, '0') + ':' +
+                       now.getSeconds().toString().padStart(2, '0');
+            }
+
+            // 更新广播状态UI
+            function updateBroadcastStatus(isBroadcasting) {
+                if (isBroadcasting) {
+                    broadcastStatusSpan.innerHTML = '<span class="status-indicator status-online"></span>直播中';
+                    videoPlaceholder.style.display = 'none';
+                    videoElement.style.display = 'block';
+                } else {
+                    broadcastStatusSpan.innerHTML = '<span class="status-indicator status-offline"></span>未直播';
+                    videoPlaceholder.style.display = 'block';
+                    videoElement.style.display = 'none';
+                }
+            }
+
+            // 开始接收视频流
+            function startReceivingStream() {
+                console.log('开始接收视频流');
+                
+                // 更新UI状态
+                updateBroadcastStatus(true);
+                
+                // 获取视频元素并设置源
+                const videoElement = document.getElementById('videoElement');
+                
+                // 通过WebSocket获取视频流URL
+                socket.emit('get_stream_url');
+                
+                // 监听视频流URL响应
+                socket.on('stream_url', function(data) {
+                    if (data && data.url) {
+                        videoElement.src = data.url;
+                        videoElement.play().catch(e => console.error('视频播放失败:', e));
+                    }
+                });
+            }
+
+            // Socket.IO事件监听
+            socket.on('connect', function() {
+                console.log('已连接到服务器');
+                // 注册UDP客户端
+                registerUdpClient();
+            });
+
+            socket.on('disconnect', function() {
+                console.log('与服务器断开连接');
+            });
+
+            socket.on('chat_message', function(data) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'chat-message';
+                messageDiv.innerHTML = `
+                    <span class="username">${data.username}</span>
+                    <span class="timestamp">${data.timestamp}</span>
+                    <div class="message-content">${data.message}</div>
+                `;
+                chatMessagesDiv.appendChild(messageDiv);
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+            });
+
+            socket.on('user_count', function(data) {
+                onlineUsersSpan.textContent = data.count;
+            });
+
+            // 注册UDP客户端
+            function registerUdpClient() {
+                // 在实际实现中，这里应该创建UDP套接字并向服务器注册
+                console.log('注册UDP客户端');
+            }
+        });
+    </script>
+</body>
+</html>
