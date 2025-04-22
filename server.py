@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 导入操作系统相关模块，用于处理文件和目录操作
 import os
 # 导入socket模块，用于网络通信
@@ -23,6 +24,20 @@ import signal
 # 导入platform模块，用于获取操作系统相关信息
 import platform
 # 导入Werkzeug工具模块中的secure_filename函数，用于安全地处理文件名
+=======
+import os
+import socket
+import threading
+import time
+import json
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask_socketio import SocketIO, emit, join_room, leave_room
+import logging
+import subprocess
+import sys
+import signal
+import platform
+>>>>>>> 51ff074bfbce8e16bca85f221d6a0d44b130ee87
 from werkzeug.utils import secure_filename
 
 # 配置日志
